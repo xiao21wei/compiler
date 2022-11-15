@@ -1,0 +1,55 @@
+int foo(int a, int b){
+if(a > b){
+return a;
+}
+else if(a<b){
+return b;
+}
+return 0;
+}
+
+int main(){
+int a,b,c;
+a = getint();
+printf("%d", a);
+b = getint();
+printf("%d", b);
+printf("20373329\n");
+c = foo(a,b);
+printf("%d\n", c);
+c = a+b;
+printf("%d\n", c);
+c = a-b;
+printf("%d\n", c);
+c = a*b;
+printf("%d\n", c);
+c = a/b;
+printf("%d\n", c);
+c = a%b;
+printf("%d\n", c);
+int q=0;
+while(q<=5){
+if(q>=3){
+printf("qq\n");
+}
+q=q+1;
+}
+int x1=0;
+{
+int x1=1;
+printf("%d", x1);
+}
+int i=1;
+while(i<10){
+if(i==3){
+i=i+1;
+continue;
+}
+printf("123 ");
+if(i==6){
+break;
+}
+i=i+1;
+}
+return 0;
+}

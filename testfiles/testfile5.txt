@@ -1,0 +1,52 @@
+int q = 1;
+
+int foo(int a, int b){
+if(a > b){
+return a;
+}
+else {
+return b;
+}
+return 0;
+}
+
+void f(){
+int i=0;
+if(i==0){
+printf("11\n");
+}
+}
+void g(){
+int i=0;
+if(i!=1){
+printf("22\n");
+}
+}
+int main(){
+int a,b,c;
+printf("20373329\n");
+printf("start\n");
+while(q >=0){
+a = getint();
+b = getint();
+c = foo(a, b);
+printf("%d\n", c);
+q = q+1;
+if(q==6){
+break;
+}
+}
+{
+int x =1;
+}
+printf("end");
+f();
+g();
+if(+1){
+printf("11\n");
+}
+if(-1){
+printf("22\n");
+}
+return 0;
+}

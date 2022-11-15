@@ -1,0 +1,52 @@
+void func(int a[], int b[],int n){
+b[0] = b[0]*a[0];
+b[1] = b[1]*a[1];
+b[2] = b[2]*a[2];
+return ;
+}
+
+int f(int a){
+if(a>=0){
+return 1;
+}
+else{
+return 0;
+}
+return -1;
+}
+
+int main(){
+int a[3][3] = {{1,2, 3},{4,5,6}, {7,8,9}};
+int d[3] = {0,0,0}, x;
+printf("20373329\n");
+x = getint();
+d[0] = x;
+x = getint();
+d[1] = x;
+x = getint();
+d[2] = x;
+printf("%d %d %d\n", a[0][0], a[0][1], a[0][2]);
+printf("%d %d %d\n", a[1][0], a[1][1], a[1][2]);
+printf("%d %d %d\n", a[2][0], a[2][1], a[2][2]);
+func(d,a[0],3);
+printf("%d %d %d\n", a[0][0], a[0][1], a[0][2]);
+printf("%d %d %d\n", a[1][0], a[1][1], a[1][2]);
+printf("%d %d %d\n", a[2][0], a[2][1], a[2][2]);
+int y=1;
+if(y==1){
+printf("11\n");
+}
+if(y!=2){
+printf("22\n");
+}
+if(1){
+printf("1\n");
+}
+if(!0){
+printf("1\n");
+}
+if(f(4)){
+printf("2\n");
+}
+return 0;
+}
