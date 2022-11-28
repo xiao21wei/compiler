@@ -3,50 +3,49 @@
 #include <cstring>
 #include <vector>
 #include <map>
-
-#define MAX 2^64-1 // 2^64-1 = 18446744073709551615
-//二维数组下标的最大值
-#define MAXN 100
 using namespace std;
 
-struct WORD{
-    string name;
-    string type;
-    int line_number;
+#define MAX 2^64-1 // 2^64-1 = 18446744073709551615
+#define MAXN 100 //二维数组下标最大值
+
+struct WORD{ //单词结构体
+    string name; //单词
+    string type; //类型
+    int line_number; //行号
 };
-struct ERROR{
-    char type;
-    int line_number;
+struct ERROR{ //错误结构体
+    char type;  //错误类型
+    int line_number; //行号
 };
-struct SYMBOL{
-    string name;
-    string type;
-    string value;
-    string address;
-    string arr[MAXN][MAXN];
-    int dim1;
-    int dim2;
-    int dim;
-    vector<int> func_params;
+struct SYMBOL{ //符号表结构体
+    string name; //单词
+    string type; //类型
+    string value; //值
+    string address; //地址
+    string arr[MAXN][MAXN]; //二维数组
+    int dim1; //一维数组长度
+    int dim2; //二维数组长度
+    int dim; //数组维数
+    vector<int> func_params; //函数参数
 };
-class TABLE{
+class TABLE{ //符号表类
 public:
     TABLE() {
         parent=NULL;
         symbol.clear();
     }
 public:
-    map<string, SYMBOL> symbol;
-    struct TABLE *parent;
+    map<string, SYMBOL> symbol; //符号表
+    struct TABLE *parent; //父符号表
 }*p;
-struct NUMBER{
-    string num;
-    int dim;
-    int dim1;
+struct NUMBER{ //数字结构体
+    string num; //数字
+    int dim; //数组维数
+    int dim1; //一维数组长度
 }number;
 
-TABLE *symbolTable = new TABLE();
-TABLE *currentTable = symbolTable;
+TABLE *symbolTable = new TABLE(); //符号表
+TABLE *currentTable = symbolTable; //当前符号表
 
 char a[MAX]={'\0'};     //存放源程序
 int line=1,i,j,k,l, count=0,v=0,register_no=1, param_dim=0;   //line:行号，i,j,k,l:循环变量，count:标识符个数，v:标识符个数，register_no:寄存器号
@@ -75,18 +74,13 @@ int value_or_address;  //是否为地址 0:值 1:地址
 int array_dim=0;  //数组维数
 int block_no=0;  //块号
 int block1_no=0;  //块号
-int cond_type = 0;
+int cond_type = 0; //条件类型 0:if 1:while
 
 //词法分析的相关函数
-bool IsNumber(char x)  {return (x >='0' && x <= '9');}  //判断是否为数字
-bool IsAlpha(char x)  {return (x >= 'a' && x <= 'z')||(x >= 'A' && x <= 'Z');} //判断是否为字母
+bool IsNumber(char x); //判断是否为数字
+bool IsAlpha(char x);//判断是否为字母
 void lexical_analyzer(string data);  //词法分析
-void save_v_word(string name, string type, int line_number){  //保存单词
-    word.name=name;
-    word.type=type;
-    word.line_number=line_number;
-    v_word.push_back(word);
-} //保存单词
+void save_v_word(string name, string type, int line_number); //保存单词
 
 //语法分析的相关函数
 void syntactic_analyzer(); //语法分析
@@ -121,775 +115,30 @@ void EqExp(); //等式表达式
 void LAndExp(); //逻辑与表达式
 void LOrExp(); //逻辑或表达式
 void ConstExp(); //常量表达式
-
-//中间代码生成相关函数
-int check_num_type(string num){
-    for(int i1=mid_code.size()-1; i1>=0; i1--){
-        if(mid_code[i1].find(num+" = ") != string::npos&&num[0]=='%'){
-            if(mid_code[i1].find(" icmp ") != string::npos
-               ||mid_code[i1].find(" and ") != string::npos
-               ||mid_code[i1].find(" or ") != string::npos){
-                return 1;
-            }
-            else return 32;
-        }
-    }
-    return 0;
-} //判断数字类型
-void compute2(){
-    x1 = num_stack.back();
-    num_stack.pop_back();
-    x2 = num_stack.back();
-    num_stack.pop_back();
-    op = op_stack.back();
-    op_stack.pop_back();
-    printf("%s %s %s\n", x2.c_str(),op.c_str(), x1.c_str());
-    if(op=="+"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = add i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="-"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = sub i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="*"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = mul i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="/"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = sdiv i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="%"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = srem i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="<"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = icmp slt i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op==">"){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = icmp sgt i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="<="){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = icmp sle i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op==">="){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = icmp sge i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="=="){
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = icmp eq i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="!=") {
-        if(check_num_type(x1)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)==1){
-            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = icmp ne i32 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="&&"){
-        if(check_num_type(x1)!=1){
-            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x1+", 0";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)!=1){
-            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x2+", 0";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = and i1 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-    else if(op=="||"){
-        if(check_num_type(x1)!=1){
-            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x1+", 0";
-            x1 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        if(check_num_type(x2)!=1){
-            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x2+", 0";
-            x2 = "%"+to_string(register_no);
-            register_no++;
-            mid_code.push_back(code);
-        }
-        code = "\t%"+to_string(register_no)+" = or i1 "+x2+", "+x1;
-        mid_code.push_back(code);
-        num_stack.push_back("%"+to_string(register_no));
-        register_no++;
-    }
-}
-void compute1() {
-    string temp;
-    x1 = num_stack.back();
-    num_stack.pop_back();
-    x2 = num_stack.back();
-    num_stack.pop_back();
-    op = op_stack.back();
-    op_stack.pop_back();
-    printf("%s %s %s\n", x2.c_str(),op.c_str(), x1.c_str());
-    if(op=="+"){
-        temp = to_string(stoi(x1)+stoi(x2));
-        num_stack.push_back(temp);
-    }
-    else if(op=="-"){
-        temp = to_string(stoi(x2)-stoi(x1));
-        num_stack.push_back(temp);
-    }
-    else if(op=="*"){
-        temp = to_string(stoi(x2)*stoi(x1));
-        num_stack.push_back(temp);
-    }
-    else if(op=="/"){
-        temp = to_string(stoi(x2)/stoi(x1));
-        num_stack.push_back(temp);
-    }
-    else if(op=="%"){
-        temp = to_string(stoi(x2)%stoi(x1));
-        num_stack.push_back(temp);
-    }
-}
-void save_array_value(string name, int type, vector<int> upper, string value[MAXN][MAXN],int flag1){ //save array value to global variable
-    p=currentTable;
-    struct SYMBOL *s = NULL;
-    while(p!=NULL){
-        if(p->symbol.count(name)!=0){
-            s=&p->symbol[name];
-            break;
-        }
-        p=p->parent;
-    }
-    if(upper.size()==1){
-        if(type==1){
-            code = "@"+name+" = constant ["+to_string(upper[0])+ " x i32] ";
-        }
-        else{
-            code = "@"+name+" = global ["+to_string(upper[0])+ " x i32] ";
-        }
-        if(flag1==1){
-            code = code +"[";
-            for(int i1=0; i1<upper[0]; i1++){
-                code =code + "i32 "+value[0][i1]+", ";
-                if(type==1)
-                    s->arr[0][i1]=value[0][i1];
-            }
-            code = code.substr(0,code.length()-2);
-            code = code + "]";
-        }
-        else {
-            code = code + "zeroinitializer";
-            for(int i1=0; i1<upper[0]; i1++){
-                if(type==1)
-                    s->arr[0][i1]="";
-            }
-        }
-        mid_code.push_back(code);
-    }
-    else if(upper.size()==2){
-        if(type==1){
-            code = "@"+name+" = constant ["+to_string(upper[0])+ " x ["+ to_string(upper[1])+" x i32]] ";
-            for(int i1=0;i1<upper[0];i1++){
-                for(int i2=0;i2<upper[1];i2++){
-                    s->arr[i1][i2]=value[i1][i2];
-                }
-            }
-        }
-        else
-            code = "@"+name+" = global ["+to_string(upper[0])+ " x ["+ to_string(upper[1])+" x i32]] ";
-        if(flag1==1) {
-            code = code + "[";
-            for (int i1 = 0; i1 < upper[0]; i1++) {
-                code = code + "[" + to_string(upper[1]) + " x i32] [";
-                for (int i2 = 0; i2 < upper[1]; i2++) {
-                    code = code + "i32 " + value[i1][i2] + ", ";
-                }
-                code = code.substr(0, code.length() - 2);
-                code = code + "], ";
-            }
-            code = code.substr(0, code.length() - 2);
-            code = code + "]";
-        }
-        else code = code + "zeroinitializer";
-        mid_code.push_back(code);
-    }
-    else if(upper.size()==0){
-        if(type==1){
-            if(flag1==1){
-                code = "@"+name+" = constant i32 "+value[0][0];
-                s->value=value[0][0];
-            }
-            else{
-                code = "@"+name+" = constant i32 0";
-                s->value="0";
-            }
-            s->address = "@"+name;
-        }
-        else{
-            if(flag1==1){
-                code = "@"+name+" = global i32 "+value[0][0];
-                s->value=value[0][0];
-            }
-            else{
-                code = "@"+name+" = global i32 0";
-                s->value="0";
-            }
-            s->address = "@"+name;
-        }
-        mid_code.push_back(code);
-    }
-}
-void save_value1(string name,string address, vector<int> upper, string value[MAXN][MAXN]){ //save array value
-    p=currentTable;
-    struct SYMBOL *s = NULL;
-    while(p!=NULL){
-        if(p->symbol.count(name)!=0){
-            s=&p->symbol[name];
-            break;
-        }
-        p=p->parent;
-    }
-    if(upper.size()==1) {
-        for(int i1 = 0;i1<upper[0];i1++){
-            s->arr[0][i1]=value[0][i1];
-        }
-        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x i32], ["+to_string(upper[0])+" x i32]* "+address+", i32 0, i32 0";
-        mid_code.push_back(code);
-        string base = "%"+to_string(register_no);
-        register_no++;
-        for(int i1=0; i1<upper[0]; i1++){
-            code = "\t%"+to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1);
-            mid_code.push_back(code);
-            register_no++;
-            code = "\tstore i32 "+value[0][i1]+", i32* %"+to_string(register_no-1);
-            mid_code.push_back(code);
-        }
-    }
-    else if(upper.size()==2){
-        for(int i1 = 0; i1<upper[0]; i1++){
-            for(int i2 = 0; i2<upper[1]; i2++){
-                s->arr[i1][i2]=value[i1][i2];
-            }
-        }
-        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]], ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]]* "+address+", i32 0, i32 0";
-        mid_code.push_back(code);
-        register_no++;
-        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[1])+" x i32], ["+to_string(upper[1])+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 0";
-        mid_code.push_back(code);
-        string base = "%"+to_string(register_no);
-        register_no++;
-        int size = upper[0] * upper[1] * 4;
-        code = "\tcall void @memset(i32* %"+to_string(register_no-1)+", i32 0, i32 "+to_string(size)+")";
-        mid_code.push_back(code);
-        for(int i1 = 0; i1<upper[0]; i1++){
-            for(int i2 = 0; i2<upper[1]; i2++){
-                if(value[i1][i2]!="0"){
-                    code = "\t%"+to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1*upper[1]+i2);
-                    register_no++;
-                    mid_code.push_back(code);
-                    code = "\tstore i32 "+value[i1][i2]+", i32* %"+ to_string(register_no-1);
-                    mid_code.push_back(code);
-                }
-            }
-        }
-    }
-    else if(upper.size()==0){
-        s->value = value[0][0];
-    }
-}
-void save_value2(string name,string address, vector<int> upper, string value[MAXN][MAXN], int flag){ //value[0][0] = "a"
-    p=currentTable;
-    struct SYMBOL *s = NULL;
-    while(p!=NULL){
-        if(p->symbol.count(name)!=0){
-            s=&p->symbol[name];
-            break;
-        }
-        p=p->parent;
-    }
-    if(upper.size()==1){
-        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x i32], ["+to_string(upper[0])+" x i32]* "+address+", i32 0, i32 0";
-        mid_code.push_back(code);
-        string base = "%"+to_string(register_no);
-        register_no++;
-        int size = upper[0] * 4;
-        code = "\tcall void @memset(i32* %"+to_string(register_no-1)+", i32 0, i32 "+to_string(size)+")";
-        mid_code.push_back(code);
-        for(int i1 = 0; i1<upper[0]; i1++){
-            if(flag==1&&value[0][i1]!="0"){
-                code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1);
-                register_no++;
-                mid_code.push_back(code);
-                code = "\tstore i32 "+value[0][i1]+", i32* %"+to_string(register_no-1);
-                mid_code.push_back(code);
-            }
-        }
-    }
-    else if(upper.size()==2){
-        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]], ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]]* "+address+", i32 0, i32 0";
-        mid_code.push_back(code);
-        register_no++;
-        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[1])+" x i32], ["+to_string(upper[1])+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 0";
-        mid_code.push_back(code);
-        string base = "%"+to_string(register_no);
-        register_no++;
-        int size = upper[0] * upper[1] * 4;
-        code = "\tcall void @memset(i32* %"+to_string(register_no-1)+", i32 0, i32 "+to_string(size)+")";
-        mid_code.push_back(code);
-        for(int i1 = 0; i1<upper[0]; i1++){
-            for(int i2 = 0; i2<upper[1]; i2++){
-                if(flag==1&&value[i1][i2]!="0"){
-                    code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1*upper[1]+i2);
-                    register_no++;
-                    mid_code.push_back(code);
-                    code = "\tstore i32 "+value[i1][i2]+", i32* %"+ to_string(register_no-1);
-                    mid_code.push_back(code);
-                }
-            }
-        }
-    }
-    else if(upper.size()==0){
-        s->value = value[0][0];
-    }
-}
-string get_array(string name, vector<string> upper,int flag){
-    p=currentTable;
-    struct SYMBOL *s = NULL;
-    while(p!=NULL){
-        if(p->symbol.count(name)!=0){
-            s=&p->symbol[name];
-            break;
-        }
-        p=p->parent;
-    }
-    if(s!=NULL){
-        if(s->type!="ParamNumber"){
-            if(s->dim==2){
-                if(upper.size()==2) {
-                    if(upper[0][0]!='%'&&upper[1][0]!='%'&&flag==0){
-                        if(s->arr[stoi(upper[0])][stoi(upper[1])]!="")
-                            return s->arr[stoi(upper[0])][stoi(upper[1])];
-                    }
-                    if(upper[0][0]=='%')
-                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
-                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
-                               " x i32]]* " + s->address + ", i64 0, i32 "+ upper[0];
-                    else
-                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
-                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
-                               " x i32]]* " + s->address + ", i64 0, i64 " + upper[0];
-                    mid_code.push_back(code);
-                    register_no++;
-                    if(upper[1][0]=='%')
-                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim2) + " x i32], [" +
-                               to_string(s->dim2) + " x i32]* %" + to_string(register_no - 1) + ", i64 0, i32 " + upper[1];
-                    else
-                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim2) + " x i32], [" +
-                               to_string(s->dim2) + " x i32]* %" + to_string(register_no - 1) + ", i64 0, i64 " + upper[1];
-                    mid_code.push_back(code);
-                    register_no++;
-                    if(flag==0){
-                        code = "\t%" + to_string(register_no) + " = load i32, i32* %" + to_string(register_no - 1);
-                        mid_code.push_back(code);
-                        register_no++;
-                    }
-                }
-                else if(upper.size()==1){
-                    if(upper[0][0]=='%')
-                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
-                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
-                               " x i32]]* " + s->address + ", i64 0, i32 "+ upper[0];
-                    else
-                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
-                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
-                               " x i32]]* " + s->address + ", i64 0, i64 " + upper[0];
-                    mid_code.push_back(code);
-                    register_no++;
-                    code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim2) + " x i32], [" +
-                           to_string(s->dim2) + " x i32]* %" + to_string(register_no - 1) + ", i32 0, i32 0";
-                    mid_code.push_back(code);
-                    register_no++;
-                }
-                else if(upper.size()==0){
-                    code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
-                           to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
-                           " x i32]]* " + s->address + ", i32 0, i32 0";
-                    mid_code.push_back(code);
-                    register_no++;
-
-                }
-                return "%"+to_string(register_no-1);
-            }
-            else if(s->dim==1){
-                if(upper.size()==0){
-                    code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim1)+" x i32], ["+
-                            to_string(s->dim1)+" x i32]* "+s->address+", i32 0, i32 0";
-                    mid_code.push_back(code);
-                    register_no++;
-                }
-                else if(upper.size()==1){
-                    if(upper[0][0]!='%'&&flag==0){
-                        printf("s->arr[0][stoi(upper[0])]=aa%saa\n",s->arr[0][stoi(upper[0])].c_str());
-                        if(s->arr[0][stoi(upper[0])]!="")
-                            return s->arr[0][stoi(upper[0])];
-                    }
-                    if(upper[0][0]=='%')
-                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim1)+" x i32], ["+
-                                to_string(s->dim1)+" x i32]* "+s->address+", i32 0, i32 "+upper[0];
-                    else
-                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim1)+" x i32], ["+
-                                to_string(s->dim1)+" x i32]* "+s->address+", i32 0, i64 "+upper[0];
-                    mid_code.push_back(code);
-                    register_no++;
-                    if(flag==0){
-                        code = "\t%"+ to_string(register_no)+" = load i32, i32* %"+to_string(register_no-1);
-                        mid_code.push_back(code);
-                        register_no++;
-                    }
-                }
-                return "%"+to_string(register_no-1);
-            }
-        }
-        else{
-            if(s->dim==2){
-                code = "\t%"+to_string(register_no)+" = load ["+to_string(s->dim2)+" x i32]*, ["+
-                        to_string(s->dim2)+" x i32]** "+s->address;
-                mid_code.push_back(code);
-                register_no++;
-                if(upper.size()==2){
-                    if(upper[0][0]=='%')
-                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 "+upper[0];
-                    else
-                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i64 "+upper[0];
-                    mid_code.push_back(code);
-                    register_no++;
-                    if(upper[1][0]=='%')
-                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 "+upper[1];
-                    else
-                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i64 0, i64 "+upper[1];
-                    mid_code.push_back(code);
-                    register_no++;
-                    if(flag==0){
-                        code = "\t%" + to_string(register_no) + " = load i32, i32* %" + to_string(register_no - 1);
-                        mid_code.push_back(code);
-                        register_no++;
-                    }
-                }
-                else if(upper.size()==1){
-                    if(upper[0][0]=='%')
-                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 "+upper[0];
-                    else
-                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i64 "+upper[0];
-                    mid_code.push_back(code);
-                    register_no++;
-                    code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
-                            to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 0";
-                    mid_code.push_back(code);
-                    register_no++;
-                }
-                return "%"+to_string(register_no-1);
-            }
-            else if(s->dim==1){
-                code = "\t%"+ to_string(register_no)+" = load i32*, i32** "+s->address;
-                mid_code.push_back(code);
-                register_no++;
-                if(upper.size()==1){//%5 = getelementptr inbounds i32, i32* %4, i64 2
-                    if(upper[0][0]=='%')
-                        code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* %"+ to_string(register_no-1)+", i32 "+upper[0];
-                    else
-                        code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* %"+ to_string(register_no-1)+", i64 "+upper[0];
-                    mid_code.push_back(code);
-                    register_no++;
-                    if(flag==0){
-                        code = "\t%" + to_string(register_no) + " = load i32, i32* %" + to_string(register_no - 1);
-                        mid_code.push_back(code);
-                        register_no++;
-                    }
-                }
-                return "%"+to_string(register_no-1);
-            }
-        }
-
-    }
-    return NULL;
-}
-void backFill_func_param(string name, int func_param_dim, vector<string> c){ //c is the value of the parameter
-    for(int i1 = mid_code.size()-1; i1 >= 0; i1--){
-        if(mid_code[i1].find("define") != string::npos
-           &&mid_code[i1].find("@"+name) != string::npos){
-            if(func_param_dim==0){
-                mid_code[i1] =mid_code[i1]+"i32, ";
-            }
-            else if(func_param_dim==1){
-                mid_code[i1] =mid_code[i1]+"i32*, ";
-            }
-            else if(func_param_dim==2){
-                mid_code[i1] = mid_code[i1]+"["+c[0]+" x i32]*, ";
-            }
-            break;
-        }
-    }
-}
-void backFill_func_end(string name){
-    for(int i1 = mid_code.size()-1; i1 >= 0; i1--){
-        if(mid_code[i1].find("define") != string::npos
-           &&mid_code[i1].find("@"+name) != string::npos){
-            if(mid_code[i1][mid_code[i1].size()-2]==','){
-                mid_code[i1].erase(mid_code[i1].size()-2,2);
-            }
-            mid_code[i1] =mid_code[i1]+") {";
-            break;
-        }
-    }
-}
-bool IsNumberString(string x){ //判断字符串是否为数字
-    int len = x.length();
-    int flag=0;
-    for(int s=0; s<len; s++){
-        if(!IsNumber(x[s])){
-            flag=1;
-            break;
-        }
-    }
-    if(flag==1){
-        return false;
-    }
-    else return true;
-}
 bool IsStmt(struct WORD w); //判断是否为语句
 bool IsExp(struct WORD w); //判断是否为表达式
 
-map<string, int> operator_map;  //运算符优先级
-
-void init_operator_map(){ //初始化运算符优先级
-    operator_map["*"] = 1;
-    operator_map["/"] = 1;
-    operator_map["%"] = 1;
-    operator_map["+"] = 2;
-    operator_map["-"] = 2;
-    operator_map["<"] = 3;
-    operator_map[">"] = 3;
-    operator_map["<="] = 3;
-    operator_map[">="] = 3;
-    operator_map["=="] = 4;
-    operator_map["!="] = 4;
-    operator_map["&&"] = 5;
-    operator_map["||"] = 6;
-}
+//中间代码生成相关函数
+int check_num_type(string num);  //检查数字类型
+void compute2();  //计算表达式
+void compute1();  //计算表达式
+void save_array_value(string name, int type, vector<int> upper, string value[MAXN][MAXN],int flag1);  //保存数组
+void save_value1(string name,string address, vector<int> upper, string value[MAXN][MAXN]);  //保存数组
+void save_value2(string name,string address, vector<int> upper, string value[MAXN][MAXN], int flag);  //保存数组
+string get_array(string name, vector<string> upper,int flag);  //获取数组
+void backFill_func_param(string name, int func_param_dim, vector<string> c);  //回填函数参数
+void backFill_func_end(string name);  //回填函数结束
+bool IsNumberString(string x);  //判断是否为数字
 
 //错误处理的相关函数
-void error(){ //错误处理
-    printf("11%d %s %d %s\n", i,v_word[i].name.c_str(), v_word[i].line_number,v_word[i-1].name.c_str());
-}
-void save_v_error(char type, int line_number){ //保存错误信息
-    e.type=type;
-    e.line_number=line_number;
-    v_error.push_back(e);
-}
-struct SYMBOL* check_symbol(struct WORD w){ //检查符号表中是否存在该符号
-    p=currentTable;
-    while(p!=NULL){
-        if(p->symbol.count(w.name)!=0){
-            return &p->symbol[w.name];
-        }
-        p=p->parent;
-    }
-    return NULL;
-}
-void save_symbol(struct SYMBOL s){ //保存符号信息
-    p = currentTable;
-    p->symbol[s.name] = s;
-}
-void SymbolInit(struct SYMBOL s){ //符号初始化
-    s.name = "\0";
-    s.type = "\0";
-    s.dim = 0;
-    s.func_params.clear();
-}
-void check_func_params(struct WORD w, vector<int> z){ //检查函数参数是否匹配
-    struct SYMBOL *symbol1= check_symbol(w);
-    if(symbol1!=NULL){
-        if(symbol1->func_params.size()!=z.size()){
-            save_v_error('d', w.line_number);
-        }
-        else{
-            for(int u=0;u<z.size();u++){
-                if(symbol1->func_params[u]!=z[u]){
-                    save_v_error('e', w.line_number);
-                    break;
-                }
-            }
-        }
-    }
-}
+void error();  //错误处理
+void save_v_error(char type, int line_number);  //保存错误
+struct SYMBOL* check_symbol(struct WORD w);  //检查符号表
+void save_symbol(struct SYMBOL s);  //保存符号表
+void SymbolInit(struct SYMBOL s);  //初始化符号表
+void check_func_params(struct WORD w, vector<int> z);  //检查函数参数
 
 int main () {
-    init_operator_map();
     fstream fs("testfile.txt");
     istreambuf_iterator<char> beg(fs),end;
     string data(beg,end);
@@ -2645,6 +1894,15 @@ void ConstExp(){
     else error();
 }
 
+bool IsNumber(char x)  {return (x >='0' && x <= '9');}  //判断是否为数字
+bool IsAlpha(char x)  {return (x >= 'a' && x <= 'z')||(x >= 'A' && x <= 'Z');} //判断是否为字母
+void lexical_analyzer(string data);  //词法分析
+void save_v_word(string name, string type, int line_number){  //保存单词
+    word.name=name;
+    word.type=type;
+    word.line_number=line_number;
+    v_word.push_back(word);
+} //保存单词
 bool IsStmt(struct WORD w){
     return
             w.type=="IDENFR" ||
@@ -2666,4 +1924,748 @@ bool IsExp(struct WORD w){
             w.name=="+" ||
             w.name=="-" ||
             w.name=="!";
+}
+
+int check_num_type(string num){ //判断数字类型
+    for(int i1=mid_code.size()-1; i1>=0; i1--){
+        if(mid_code[i1].find(num+" = ") != string::npos&&num[0]=='%'){
+            if(mid_code[i1].find(" icmp ") != string::npos
+               ||mid_code[i1].find(" and ") != string::npos
+               ||mid_code[i1].find(" or ") != string::npos){
+                return 1;
+            }
+            else return 32;
+        }
+    }
+    return 0;
+}
+void compute2(){
+    x1 = num_stack.back();
+    num_stack.pop_back();
+    x2 = num_stack.back();
+    num_stack.pop_back();
+    op = op_stack.back();
+    op_stack.pop_back();
+    printf("%s %s %s\n", x2.c_str(),op.c_str(), x1.c_str());
+    if(op=="+"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = add i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="-"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = sub i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="*"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = mul i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="/"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = sdiv i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="%"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = srem i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="<"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = icmp slt i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op==">"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = icmp sgt i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="<="){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = icmp sle i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op==">="){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = icmp sge i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="=="){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = icmp eq i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="!=") {
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = icmp ne i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="&&"){
+        if(check_num_type(x1)!=1){
+            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x1+", 0";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)!=1){
+            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x2+", 0";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = and i1 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="||"){
+        if(check_num_type(x1)!=1){
+            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x1+", 0";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)!=1){
+            code = "\t%"+ to_string(register_no)+" = icmp ne i32 "+x2+", 0";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = or i1 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+}
+void compute1() {
+    string temp;
+    x1 = num_stack.back();
+    num_stack.pop_back();
+    x2 = num_stack.back();
+    num_stack.pop_back();
+    op = op_stack.back();
+    op_stack.pop_back();
+    printf("%s %s %s\n", x2.c_str(),op.c_str(), x1.c_str());
+    if(op=="+"){
+        temp = to_string(stoi(x1)+stoi(x2));
+        num_stack.push_back(temp);
+    }
+    else if(op=="-"){
+        temp = to_string(stoi(x2)-stoi(x1));
+        num_stack.push_back(temp);
+    }
+    else if(op=="*"){
+        temp = to_string(stoi(x2)*stoi(x1));
+        num_stack.push_back(temp);
+    }
+    else if(op=="/"){
+        temp = to_string(stoi(x2)/stoi(x1));
+        num_stack.push_back(temp);
+    }
+    else if(op=="%"){
+        temp = to_string(stoi(x2)%stoi(x1));
+        num_stack.push_back(temp);
+    }
+}
+void save_array_value(string name, int type, vector<int> upper, string value[MAXN][MAXN],int flag1){ //save array value to global variable
+    p=currentTable;
+    struct SYMBOL *s = NULL;
+    while(p!=NULL){
+        if(p->symbol.count(name)!=0){
+            s=&p->symbol[name];
+            break;
+        }
+        p=p->parent;
+    }
+    if(upper.size()==1){
+        if(type==1){
+            code = "@"+name+" = constant ["+to_string(upper[0])+ " x i32] ";
+        }
+        else{
+            code = "@"+name+" = global ["+to_string(upper[0])+ " x i32] ";
+        }
+        if(flag1==1){
+            code = code +"[";
+            for(int i1=0; i1<upper[0]; i1++){
+                code =code + "i32 "+value[0][i1]+", ";
+                if(type==1)
+                    s->arr[0][i1]=value[0][i1];
+            }
+            code = code.substr(0,code.length()-2);
+            code = code + "]";
+        }
+        else {
+            code = code + "zeroinitializer";
+            for(int i1=0; i1<upper[0]; i1++){
+                if(type==1)
+                    s->arr[0][i1]="";
+            }
+        }
+        mid_code.push_back(code);
+    }
+    else if(upper.size()==2){
+        if(type==1){
+            code = "@"+name+" = constant ["+to_string(upper[0])+ " x ["+ to_string(upper[1])+" x i32]] ";
+            for(int i1=0;i1<upper[0];i1++){
+                for(int i2=0;i2<upper[1];i2++){
+                    s->arr[i1][i2]=value[i1][i2];
+                }
+            }
+        }
+        else
+            code = "@"+name+" = global ["+to_string(upper[0])+ " x ["+ to_string(upper[1])+" x i32]] ";
+        if(flag1==1) {
+            code = code + "[";
+            for (int i1 = 0; i1 < upper[0]; i1++) {
+                code = code + "[" + to_string(upper[1]) + " x i32] [";
+                for (int i2 = 0; i2 < upper[1]; i2++) {
+                    code = code + "i32 " + value[i1][i2] + ", ";
+                }
+                code = code.substr(0, code.length() - 2);
+                code = code + "], ";
+            }
+            code = code.substr(0, code.length() - 2);
+            code = code + "]";
+        }
+        else code = code + "zeroinitializer";
+        mid_code.push_back(code);
+    }
+    else if(upper.size()==0){
+        if(type==1){
+            if(flag1==1){
+                code = "@"+name+" = constant i32 "+value[0][0];
+                s->value=value[0][0];
+            }
+            else{
+                code = "@"+name+" = constant i32 0";
+                s->value="0";
+            }
+            s->address = "@"+name;
+        }
+        else{
+            if(flag1==1){
+                code = "@"+name+" = global i32 "+value[0][0];
+                s->value=value[0][0];
+            }
+            else{
+                code = "@"+name+" = global i32 0";
+                s->value="0";
+            }
+            s->address = "@"+name;
+        }
+        mid_code.push_back(code);
+    }
+}
+void save_value1(string name,string address, vector<int> upper, string value[MAXN][MAXN]){ //save array value
+    p=currentTable;
+    struct SYMBOL *s = NULL;
+    while(p!=NULL){
+        if(p->symbol.count(name)!=0){
+            s=&p->symbol[name];
+            break;
+        }
+        p=p->parent;
+    }
+    if(upper.size()==1) {
+        for(int i1 = 0;i1<upper[0];i1++){
+            s->arr[0][i1]=value[0][i1];
+        }
+        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x i32], ["+to_string(upper[0])+" x i32]* "+address+", i32 0, i32 0";
+        mid_code.push_back(code);
+        string base = "%"+to_string(register_no);
+        register_no++;
+        for(int i1=0; i1<upper[0]; i1++){
+            code = "\t%"+to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1);
+            mid_code.push_back(code);
+            register_no++;
+            code = "\tstore i32 "+value[0][i1]+", i32* %"+to_string(register_no-1);
+            mid_code.push_back(code);
+        }
+    }
+    else if(upper.size()==2){
+        for(int i1 = 0; i1<upper[0]; i1++){
+            for(int i2 = 0; i2<upper[1]; i2++){
+                s->arr[i1][i2]=value[i1][i2];
+            }
+        }
+        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]], ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]]* "+address+", i32 0, i32 0";
+        mid_code.push_back(code);
+        register_no++;
+        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[1])+" x i32], ["+to_string(upper[1])+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 0";
+        mid_code.push_back(code);
+        string base = "%"+to_string(register_no);
+        register_no++;
+        int size = upper[0] * upper[1] * 4;
+        code = "\tcall void @memset(i32* %"+to_string(register_no-1)+", i32 0, i32 "+to_string(size)+")";
+        mid_code.push_back(code);
+        for(int i1 = 0; i1<upper[0]; i1++){
+            for(int i2 = 0; i2<upper[1]; i2++){
+                if(value[i1][i2]!="0"){
+                    code = "\t%"+to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1*upper[1]+i2);
+                    register_no++;
+                    mid_code.push_back(code);
+                    code = "\tstore i32 "+value[i1][i2]+", i32* %"+ to_string(register_no-1);
+                    mid_code.push_back(code);
+                }
+            }
+        }
+    }
+    else if(upper.size()==0){
+        s->value = value[0][0];
+    }
+}
+void save_value2(string name,string address, vector<int> upper, string value[MAXN][MAXN], int flag){ //value[0][0] = "a"
+    p=currentTable;
+    struct SYMBOL *s = NULL;
+    while(p!=NULL){
+        if(p->symbol.count(name)!=0){
+            s=&p->symbol[name];
+            break;
+        }
+        p=p->parent;
+    }
+    if(upper.size()==1){
+        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x i32], ["+to_string(upper[0])+" x i32]* "+address+", i32 0, i32 0";
+        mid_code.push_back(code);
+        string base = "%"+to_string(register_no);
+        register_no++;
+        int size = upper[0] * 4;
+        code = "\tcall void @memset(i32* %"+to_string(register_no-1)+", i32 0, i32 "+to_string(size)+")";
+        mid_code.push_back(code);
+        for(int i1 = 0; i1<upper[0]; i1++){
+            if(flag==1&&value[0][i1]!="0"){
+                code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1);
+                register_no++;
+                mid_code.push_back(code);
+                code = "\tstore i32 "+value[0][i1]+", i32* %"+to_string(register_no-1);
+                mid_code.push_back(code);
+            }
+        }
+    }
+    else if(upper.size()==2){
+        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]], ["+to_string(upper[0])+" x ["+to_string(upper[1])+" x i32]]* "+address+", i32 0, i32 0";
+        mid_code.push_back(code);
+        register_no++;
+        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(upper[1])+" x i32], ["+to_string(upper[1])+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 0";
+        mid_code.push_back(code);
+        string base = "%"+to_string(register_no);
+        register_no++;
+        int size = upper[0] * upper[1] * 4;
+        code = "\tcall void @memset(i32* %"+to_string(register_no-1)+", i32 0, i32 "+to_string(size)+")";
+        mid_code.push_back(code);
+        for(int i1 = 0; i1<upper[0]; i1++){
+            for(int i2 = 0; i2<upper[1]; i2++){
+                if(flag==1&&value[i1][i2]!="0"){
+                    code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* "+base+", i32 "+to_string(i1*upper[1]+i2);
+                    register_no++;
+                    mid_code.push_back(code);
+                    code = "\tstore i32 "+value[i1][i2]+", i32* %"+ to_string(register_no-1);
+                    mid_code.push_back(code);
+                }
+            }
+        }
+    }
+    else if(upper.size()==0){
+        s->value = value[0][0];
+    }
+}
+string get_array(string name, vector<string> upper,int flag){
+    p=currentTable;
+    struct SYMBOL *s = NULL;
+    while(p!=NULL){
+        if(p->symbol.count(name)!=0){
+            s=&p->symbol[name];
+            break;
+        }
+        p=p->parent;
+    }
+    if(s!=NULL){
+        if(s->type!="ParamNumber"){
+            if(s->dim==2){
+                if(upper.size()==2) {
+                    if(upper[0][0]!='%'&&upper[1][0]!='%'&&flag==0){
+                        if(s->arr[stoi(upper[0])][stoi(upper[1])]!="")
+                            return s->arr[stoi(upper[0])][stoi(upper[1])];
+                    }
+                    if(upper[0][0]=='%')
+                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
+                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
+                               " x i32]]* " + s->address + ", i64 0, i32 "+ upper[0];
+                    else
+                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
+                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
+                               " x i32]]* " + s->address + ", i64 0, i64 " + upper[0];
+                    mid_code.push_back(code);
+                    register_no++;
+                    if(upper[1][0]=='%')
+                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim2) + " x i32], [" +
+                               to_string(s->dim2) + " x i32]* %" + to_string(register_no - 1) + ", i64 0, i32 " + upper[1];
+                    else
+                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim2) + " x i32], [" +
+                               to_string(s->dim2) + " x i32]* %" + to_string(register_no - 1) + ", i64 0, i64 " + upper[1];
+                    mid_code.push_back(code);
+                    register_no++;
+                    if(flag==0){
+                        code = "\t%" + to_string(register_no) + " = load i32, i32* %" + to_string(register_no - 1);
+                        mid_code.push_back(code);
+                        register_no++;
+                    }
+                }
+                else if(upper.size()==1){
+                    if(upper[0][0]=='%')
+                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
+                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
+                               " x i32]]* " + s->address + ", i64 0, i32 "+ upper[0];
+                    else
+                        code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
+                               to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
+                               " x i32]]* " + s->address + ", i64 0, i64 " + upper[0];
+                    mid_code.push_back(code);
+                    register_no++;
+                    code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim2) + " x i32], [" +
+                           to_string(s->dim2) + " x i32]* %" + to_string(register_no - 1) + ", i32 0, i32 0";
+                    mid_code.push_back(code);
+                    register_no++;
+                }
+                else if(upper.size()==0){
+                    code = "\t%" + to_string(register_no) + " = getelementptr [" + to_string(s->dim1) + " x [" +
+                           to_string(s->dim2) + " x i32]], [" + to_string(s->dim1) + " x [" + to_string(s->dim2) +
+                           " x i32]]* " + s->address + ", i32 0, i32 0";
+                    mid_code.push_back(code);
+                    register_no++;
+
+                }
+                return "%"+to_string(register_no-1);
+            }
+            else if(s->dim==1){
+                if(upper.size()==0){
+                    code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim1)+" x i32], ["+
+                           to_string(s->dim1)+" x i32]* "+s->address+", i32 0, i32 0";
+                    mid_code.push_back(code);
+                    register_no++;
+                }
+                else if(upper.size()==1){
+                    if(upper[0][0]!='%'&&flag==0){
+                        printf("s->arr[0][stoi(upper[0])]=aa%saa\n",s->arr[0][stoi(upper[0])].c_str());
+                        if(s->arr[0][stoi(upper[0])]!="")
+                            return s->arr[0][stoi(upper[0])];
+                    }
+                    if(upper[0][0]=='%')
+                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim1)+" x i32], ["+
+                               to_string(s->dim1)+" x i32]* "+s->address+", i32 0, i32 "+upper[0];
+                    else
+                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim1)+" x i32], ["+
+                               to_string(s->dim1)+" x i32]* "+s->address+", i32 0, i64 "+upper[0];
+                    mid_code.push_back(code);
+                    register_no++;
+                    if(flag==0){
+                        code = "\t%"+ to_string(register_no)+" = load i32, i32* %"+to_string(register_no-1);
+                        mid_code.push_back(code);
+                        register_no++;
+                    }
+                }
+                return "%"+to_string(register_no-1);
+            }
+        }
+        else{
+            if(s->dim==2){
+                code = "\t%"+to_string(register_no)+" = load ["+to_string(s->dim2)+" x i32]*, ["+
+                       to_string(s->dim2)+" x i32]** "+s->address;
+                mid_code.push_back(code);
+                register_no++;
+                if(upper.size()==2){
+                    if(upper[0][0]=='%')
+                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 "+upper[0];
+                    else
+                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i64 "+upper[0];
+                    mid_code.push_back(code);
+                    register_no++;
+                    if(upper[1][0]=='%')
+                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 "+upper[1];
+                    else
+                        code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i64 0, i64 "+upper[1];
+                    mid_code.push_back(code);
+                    register_no++;
+                    if(flag==0){
+                        code = "\t%" + to_string(register_no) + " = load i32, i32* %" + to_string(register_no - 1);
+                        mid_code.push_back(code);
+                        register_no++;
+                    }
+                }
+                else if(upper.size()==1){
+                    if(upper[0][0]=='%')
+                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 "+upper[0];
+                    else
+                        code = "\t%"+to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                               to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i64 "+upper[0];
+                    mid_code.push_back(code);
+                    register_no++;
+                    code = "\t%"+ to_string(register_no)+" = getelementptr ["+to_string(s->dim2)+" x i32], ["+
+                           to_string(s->dim2)+" x i32]* %"+to_string(register_no-1)+", i32 0, i32 0";
+                    mid_code.push_back(code);
+                    register_no++;
+                }
+                return "%"+to_string(register_no-1);
+            }
+            else if(s->dim==1){
+                code = "\t%"+ to_string(register_no)+" = load i32*, i32** "+s->address;
+                mid_code.push_back(code);
+                register_no++;
+                if(upper.size()==1){//%5 = getelementptr inbounds i32, i32* %4, i64 2
+                    if(upper[0][0]=='%')
+                        code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* %"+ to_string(register_no-1)+", i32 "+upper[0];
+                    else
+                        code = "\t%"+ to_string(register_no)+" = getelementptr i32, i32* %"+ to_string(register_no-1)+", i64 "+upper[0];
+                    mid_code.push_back(code);
+                    register_no++;
+                    if(flag==0){
+                        code = "\t%" + to_string(register_no) + " = load i32, i32* %" + to_string(register_no - 1);
+                        mid_code.push_back(code);
+                        register_no++;
+                    }
+                }
+                return "%"+to_string(register_no-1);
+            }
+        }
+
+    }
+    return NULL;
+}
+void backFill_func_param(string name, int func_param_dim, vector<string> c){ //c is the value of the parameter
+    for(int i1 = mid_code.size()-1; i1 >= 0; i1--){
+        if(mid_code[i1].find("define") != string::npos
+           &&mid_code[i1].find("@"+name) != string::npos){
+            if(func_param_dim==0){
+                mid_code[i1] =mid_code[i1]+"i32, ";
+            }
+            else if(func_param_dim==1){
+                mid_code[i1] =mid_code[i1]+"i32*, ";
+            }
+            else if(func_param_dim==2){
+                mid_code[i1] = mid_code[i1]+"["+c[0]+" x i32]*, ";
+            }
+            break;
+        }
+    }
+}
+void backFill_func_end(string name){
+    for(int i1 = mid_code.size()-1; i1 >= 0; i1--){
+        if(mid_code[i1].find("define") != string::npos
+           &&mid_code[i1].find("@"+name) != string::npos){
+            if(mid_code[i1][mid_code[i1].size()-2]==','){
+                mid_code[i1].erase(mid_code[i1].size()-2,2);
+            }
+            mid_code[i1] =mid_code[i1]+") {";
+            break;
+        }
+    }
+}
+bool IsNumberString(string x){ //判断字符串是否为数字
+    int len = x.length();
+    int flag=0;
+    for(int s=0; s<len; s++){
+        if(!IsNumber(x[s])){
+            flag=1;
+            break;
+        }
+    }
+    if(flag==1){
+        return false;
+    }
+    else return true;
+}
+
+void error(){ //错误处理
+    printf("11%d %s %d %s\n", i,v_word[i].name.c_str(), v_word[i].line_number,v_word[i-1].name.c_str());
+}
+void save_v_error(char type, int line_number){ //保存错误信息
+    e.type=type;
+    e.line_number=line_number;
+    v_error.push_back(e);
+}
+struct SYMBOL* check_symbol(struct WORD w){ //检查符号表中是否存在该符号
+    p=currentTable;
+    while(p!=NULL){
+        if(p->symbol.count(w.name)!=0){
+            return &p->symbol[w.name];
+        }
+        p=p->parent;
+    }
+    return NULL;
+}
+void save_symbol(struct SYMBOL s){ //保存符号信息
+    p = currentTable;
+    p->symbol[s.name] = s;
+}
+void SymbolInit(struct SYMBOL s){ //符号初始化
+    s.name = "\0";
+    s.type = "\0";
+    s.dim = 0;
+    s.func_params.clear();
+}
+void check_func_params(struct WORD w, vector<int> z){ //检查函数参数是否匹配
+    struct SYMBOL *symbol1= check_symbol(w);
+    if(symbol1!=NULL){
+        if(symbol1->func_params.size()!=z.size()){
+            save_v_error('d', w.line_number);
+        }
+        else{
+            for(int u=0;u<z.size();u++){
+                if(symbol1->func_params[u]!=z[u]){
+                    save_v_error('e', w.line_number);
+                    break;
+                }
+            }
+        }
+    }
 }
