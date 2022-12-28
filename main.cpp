@@ -209,6 +209,8 @@ void lexical_analyzer(string data){ //词法分析
                     save_v_word(a, "VOIDTK", line);
                 else if(strcmp(a, "printf")==0)
                     save_v_word(a, "PRINTFTK", line);
+                else if(strcmp(a, "bitand")==0)
+                    save_v_word(a, "BITANDTK", line);
                 else
                     save_v_word(a, "IDENFR", line);
                 i=j-1;
@@ -646,7 +648,22 @@ void VarDef(){
             flag = 1;
             cout << v_word[i].type << " " << v_word[i].name << endl;
             i++;
-            InitVal();
+            if(v_word[i].name=="getint"&&v_word[i+1].name=="("){
+                i=i+2;
+                if(v_word[i].name==")"){
+                    cout << v_word[i].type << " " << v_word[i].name << endl;
+                    i++;
+                    code = "\t%"+ to_string(register_no)+" = call i32 @getint()";
+                    mid_code.push_back(code);
+                    register_no++;
+                    array_temp1[0][0] = "%"+ to_string(register_no-1);
+                }
+                else
+                    save_v_error('l', v_word[i-1].line_number);
+            }
+            else{
+                InitVal();
+            }
             if(upper_bound.size()==0&&is_global!=1){
                 symbol.value = array_temp1[0][0];
                 code = "\tstore i32 "+symbol.value+", i32* "+symbol.address;
@@ -660,7 +677,7 @@ void VarDef(){
         if(is_global==1){
             save_array_value(symbol.name, 0, upper_bound, array_temp1,flag);
         }
-            else if(flag==1){
+        else if(flag==1){
             save_value2(symbol.name, symbol.address, upper_bound, array_temp1, flag);
         }
     }
@@ -1708,7 +1725,7 @@ void FuncRParams(){
 void MulExp(){
     if(IsExp(v_word[i])){
         UnaryExp();
-        while(v_word[i].name=="*"||v_word[i].name=="/"||v_word[i].name=="%"){
+        while(v_word[i].name=="*"||v_word[i].name=="/"||v_word[i].name=="%"||v_word[i].name=="bitand"){
             string s = v_word[i].name;
             cout << "<MulExp>" << endl;
             cout << v_word[i].type << " " << v_word[i].name << endl;
@@ -1930,7 +1947,7 @@ int check_num_type(string num){ //判断数字类型
     for(int i1=mid_code.size()-1; i1>=0; i1--){
         if(mid_code[i1].find(num+" = ") != string::npos&&num[0]=='%'){
             if(mid_code[i1].find(" icmp ") != string::npos
-               ||mid_code[i1].find(" and ") != string::npos
+               ||mid_code[i1].find(" and i1") != string::npos
                ||mid_code[i1].find(" or ") != string::npos){
                 return 1;
             }
@@ -1946,7 +1963,7 @@ void compute2(){
     num_stack.pop_back();
     op = op_stack.back();
     op_stack.pop_back();
-    printf("%s %s %s\n", x2.c_str(),op.c_str(), x1.c_str());
+    printf("%s %s2 %s\n", x2.c_str(),op.c_str(), x1.c_str());
     if(op=="+"){
         if(check_num_type(x1)==1){
             code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
@@ -1997,6 +2014,24 @@ void compute2(){
             mid_code.push_back(code);
         }
         code = "\t%"+to_string(register_no)+" = mul i32 "+x2+", "+x1;
+        mid_code.push_back(code);
+        num_stack.push_back("%"+to_string(register_no));
+        register_no++;
+    }
+    else if(op=="bitand"){
+        if(check_num_type(x1)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x1+" to i32";
+            x1 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        if(check_num_type(x2)==1){
+            code = "\t%"+to_string(register_no)+" = zext i1 "+x2+" to i32";
+            x2 = "%"+to_string(register_no);
+            register_no++;
+            mid_code.push_back(code);
+        }
+        code = "\t%"+to_string(register_no)+" = and i32 "+x2+", "+x1;
         mid_code.push_back(code);
         num_stack.push_back("%"+to_string(register_no));
         register_no++;
@@ -2190,7 +2225,7 @@ void compute1() {
     num_stack.pop_back();
     op = op_stack.back();
     op_stack.pop_back();
-    printf("%s %s %s\n", x2.c_str(),op.c_str(), x1.c_str());
+    printf("%s %s1 %s\n", x2.c_str(),op.c_str(), x1.c_str());
     if(op=="+"){
         temp = to_string(stoi(x1)+stoi(x2));
         num_stack.push_back(temp);
@@ -2201,6 +2236,10 @@ void compute1() {
     }
     else if(op=="*"){
         temp = to_string(stoi(x2)*stoi(x1));
+        num_stack.push_back(temp);
+    }
+    else if(op=="bitand"){
+        temp = to_string(stoi(x2)&stoi(x1));
         num_stack.push_back(temp);
     }
     else if(op=="/"){
